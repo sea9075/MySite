@@ -26,7 +26,6 @@ export const about = {
   highlights: [
     { label: "軟體工程經驗", value: "2+ 年" },
     { label: "服務客戶數", value: "200+" },
-    { label: "查詢效能", value: "2 秒 / 3000 筆" },
   ],
 };
 

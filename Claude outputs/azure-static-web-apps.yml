@@ -1,44 +1,110 @@
+# 這個檔案定義一個 GitHub Actions 工作流程（workflow）
+# 作用：每次程式碼有異動時，自動建置（build）並部署到 Azure Static Web Apps
 name: Deploy to Azure Static Web Apps
 
-# 每次 push 到 main，或針對 main 開/更新/關閉 PR 時都會觸發部署
+# ------------------------------------------------------------------
+# on：定義「什麼時候」要觸發這個 workflow
+# ------------------------------------------------------------------
 on:
+  # 1. 當有人 push 程式碼到 main 分支時
+  #    → 觸發「正式環境」的建置與部署（會更新你的正式網站，例如 kuei.dev）
   push:
     branches:
       - main
+
+  # 2. 當有 Pull Request（PR）要合併進 main 分支、且發生下列事件時
+  #    opened：PR 剛被開啟
+  #    synchronize：PR 的分支有新的 commit push 上來（更新 PR 內容）
+  #    reopened：PR 被重新開啟
+  #    closed：PR 被關閉或合併
+  #    → Azure Static Web Apps 會自動幫每個 PR 建立一個獨立的「預覽環境」
+  #      （一個專屬的測試網址），方便在合併前先看到修改後的畫面
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
       - main
 
+# ------------------------------------------------------------------
+# jobs：定義實際要執行的工作內容，這裡有兩個 job
+# ------------------------------------------------------------------
 jobs:
+  # ==================================================================
+  # Job 1：建置並部署網站
+  # ==================================================================
   build_and_deploy_job:
+    # 執行條件：
+    # - 事件是「push」（推到 main），或者
+    # - 事件是「pull_request」，但動作不是 closed（也就是 PR 開啟/更新/重開時）
+    # 換句話說：只要不是「關閉 PR」，都要跑建置與部署
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+
+    # 這個 job 要在 GitHub 提供的 Ubuntu 虛擬機器上執行
     runs-on: ubuntu-latest
+
+    # 這個 job 在 GitHub Actions 介面上顯示的名稱
     name: Build and Deploy Job
+
     steps:
+      # 步驟 1：把 repo 的程式碼下載（checkout）到這台執行 workflow 的虛擬機器上
+      # 沒有這一步，後面的建置指令會抓不到任何程式碼
       - uses: actions/checkout@v4
         with:
+          # 如果專案裡有用到 git submodule，一併把它們也抓下來
+          # 這個專案目前沒有用 submodule，但保留這個設定沒有壞處
           submodules: true
 
+      # 步驟 2：真正執行「建置」與「部署」的核心步驟
+      # 使用 Azure 官方提供的 static-web-apps-deploy Action
       - name: Build and Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
+          # 部署用的密鑰，用來讓 GitHub Actions 有權限把檔案傳到你的 Azure 資源
+          # 這組值不會寫死在檔案裡，而是從 GitHub repo 的
+          # Settings → Secrets and variables → Actions 裡讀取，
+          # 對應名稱要叫 AZURE_STATIC_WEB_APPS_API_TOKEN
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+
+          # GitHub 自動提供的內建 token，讓這個 Action 可以在 PR 上
+          # 留言部署狀態、建立預覽環境的連結等，不需要另外設定
           repo_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # 這次要執行的動作："upload" 代表「建置 + 部署」
+          # （另一個可能的值是 "close"，用在下面關閉 PR 的 job）
           action: "upload"
+
+          # 原始碼所在的資料夾路徑，"/" 代表 repo 最上層
+          # （因為這個專案的 package.json、src 資料夾都直接放在 repo 根目錄）
           app_location: "/"
+
+          # 建置完成後，實際要拿去部署的靜態檔案資料夾
+          # Vite 預設會把 build 產出的檔案放在 "dist" 資料夾，所以填 dist
           output_location: "dist"
+
+          # false 代表：讓這個 Action 自動幫你執行 npm install + npm run build
+          # 如果之後想自己手動控制建置流程（例如要跑額外的測試指令），
+          # 可以把這裡改成 true，然後自己在這一步之前加一個手動 build 的步驟
           skip_app_build: false
 
+  # ==================================================================
+  # Job 2：當 Pull Request 被關閉時，清掉對應的預覽環境
+  # ==================================================================
   close_pull_request_job:
+    # 執行條件：只有在「pull_request」事件、且動作是 closed（PR 被關閉或合併）時才跑
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
+
     runs-on: ubuntu-latest
     name: Close Pull Request Job
+
     steps:
+      # 唯一的步驟：通知 Azure 把這個 PR 對應的預覽環境刪除
+      # 避免每個關閉的 PR 都留著一個沒人用、但持續佔用資源的預覽網站
       - name: Close Pull Request
         id: closepullrequest
         uses: Azure/static-web-apps-deploy@v1
         with:
+          # 一樣需要部署密鑰才能操作這個 Azure 資源
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+
+          # 這次動作是 "close"：代表「關閉 / 刪除預覽環境」，不會執行建置或部署
           action: "close"
