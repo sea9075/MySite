@@ -3,11 +3,6 @@
 以 React + Vite 打造的極簡風格（Minimalist）個人作品集，內建 Hero、About、Skills、Projects、
 Experience、Contact 六個區塊，並附上部署到 **Azure Static Web Apps** 所需的設定檔。
 
-## 目前狀態
-
-網站目前使用的是**範例佔位內容**（名字、經歷、專案都是假資料），架構跟排版都已完成，
-你只需要替換內容即可上線。
-
 ## 如何替換成你自己的內容
 
 **幾乎所有文字內容都集中在一個檔案：`src/data/content.js`**，打開它依序修改：
