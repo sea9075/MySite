@@ -80,20 +80,20 @@ export const projects = [
     demoUrl: "",
   },
   {
-    title: "高併發購票系統（Side Project）",
-    description:
-      "工作之餘從零打造的購票系統，完整走過設計、開發、壓測到雲端部署的流程，實際排查並解決資料庫原子操作、任務佇列容錯、容器優雅關閉、跨網域驗證等真實會遇到的工程問題。",
-    tags: ["Node.js", "Redis", "BullMQ", "k6", "Docker"],
-    githubUrl: "",
-    demoUrl: "",
-  },
-  {
     title: "跨主機系統維運與客戶支援",
     description:
       "維護 5 台 GCP Windows Server 與 3 台 Linux VM，支援 200 家以上客戶的日常營運；建立分級問題處理流程與維運知識庫，並曾在系統無預警當機的緊急事故中即時完成修復。",
     tags: ["Windows Server", "IIS", "MSSQL", "Linux", "MariaDB"],
     githubUrl: "",
     demoUrl: "",
+  },
+  {
+    title: "MyERP 進銷存管理系統（Hybrid Cloud 部署）",
+    description:
+      "採用 Clean Architecture 設計的進銷存管理系統，獨立完成 .NET 10 後端與 React 前端開發，涵蓋商品／庫存／進出貨／人資薪資／報表等完整模組。自建 3 節點 K8s 家庭實驗室叢集（kubeadm + Cilium + Gateway API），規劃前後端分離的混合雲部署架構：後端透過 GitOps（ArgoCD + Helm + GitHub Actions）自動部署至自架叢集並串接 Azure SQL Database／Service Bus／Key Vault，前端部署於 Azure Static Web Apps。實際排查並解決 DNS 暫時性錯誤重試、External Secrets 認證鏈、K8s 節點記憶體耗盡等真實維運問題。",
+    tags: [".NET 10", "React", "Kubernetes", "Azure", "GitOps"],
+    githubUrl: "https://github.com/sea9075/MyErp",
+    demoUrl: "https://myerp.kuei.dev",
   },
 ];
 
